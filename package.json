@@ -1,0 +1,17 @@
+{
+  "name": "lab1-6",
+  "version": "1.0.0",
+  "description": "Class Lab work 1 of Week 6",
+  "main": "index.js",
+  "scripts": {
+    "test": "nodemon ./index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "keywords": [],
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "express": "^4.21.2",
+    "mongoose": "^8.9.5"
+  }
+}

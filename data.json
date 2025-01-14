@@ -1,0 +1,37 @@
+[
+  {
+    "student_id": 0,
+    "name": "Alice Moon",
+    "age": 20,
+    "major": "Physics",
+    "enrolled": true
+  },
+  {
+    "student_id": 1,
+    "name": "Bob John",
+    "age": 22,
+    "major": "Mathematics",
+    "enrolled": false
+  },
+  {
+    "student_id": 2,
+    "name": "Charlie Chaplin",
+    "age": 21,
+    "major": "Computer Science",
+    "enrolled": true
+  },
+  {
+    "student_id": 3,
+    "name": "Diana White",
+    "age": 23,
+    "major": "Biology",
+    "enrolled": true
+  },
+  {
+    "student_id": 4,
+    "name": "John Doe",
+    "age": 19,
+    "major": "Engineering",
+    "enrolled": false
+  }
+]
