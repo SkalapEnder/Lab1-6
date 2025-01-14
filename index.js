@@ -5,9 +5,9 @@ const Student = require('./models/Student');
 const bodyParser = require('body-parser');
 
 const app = express();
-app.use(bodyParser.json());
+app.use(express.json());
 
-mongoose.connect('mongodb://localhost:27017/students')
+mongoose.connect('mongodb://127.0.0.1:27017/school')
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('Connection error', err));
 
@@ -19,7 +19,7 @@ app.get('/', (req, res) => {
 })
 
 // CRUD Endpoints
-app.post('/students', async (req, res) => {
+app.post('/students-create', async (req, res) => {
     try {
         const students = await collection.insertMany(req.body);
         res.status(201).send(students);
@@ -30,9 +30,19 @@ app.post('/students', async (req, res) => {
 
 app.get('/students', async (req, res) => {
     try {
-        const filter = req.query;
-        const students = await collection.find(filter);
-        res.status(200).send(students);
+        const students = await collection.find().toArray();
+        res.status(200).json(students);
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
+
+app.post('/students', async (req, res) => {
+    try {
+        const { filter } = req.body.filter;
+        const students = await collection.find(filter).toArray();
+
+        res.status(200).json(students);
     } catch (err) {
         res.status(500).send(err);
     }
@@ -42,7 +52,8 @@ app.put('/students/:id', async (req, res) => {
     try {
         const updatedStudent = await collection.findOneAndUpdate(
             { id: req.params.id },
-            req.body
+            req.body,
+            { new: true }
         );
         if (!updatedStudent) return res.status(404).send('Student not found');
         res.status(200).send(updatedStudent);

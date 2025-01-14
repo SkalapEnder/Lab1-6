@@ -14,7 +14,7 @@ function createElement(tag, attributes = {}, ...children) {
 }
 
 // Initialize UI
-const app = document.getElementById('app'   );
+const app = document.getElementById('app');
 const select = createElement('select', {class: 'form-select w-50 mx-auto'},
     createElement('option', { value: ''}, 'Choose'),
     createElement('option', { value: 'create' }, 'Create'),
@@ -22,7 +22,7 @@ const select = createElement('select', {class: 'form-select w-50 mx-auto'},
     createElement('option', { value: 'update' }, 'Update'),
     createElement('option', { value: 'delete' }, 'Delete')
 );
-const actionContainer = createElement('div', { id: 'actionContainer' });
+const actionContainer = createElement('div', { class: 'text-center', id: 'actionContainer' });
 
 app.appendChild(select);
 app.appendChild(actionContainer);
@@ -81,7 +81,7 @@ select.addEventListener('change', () => {
                 };
             });
 
-            const response = await fetch('/students', {
+            const response = await fetch('/students-create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(students),
@@ -96,26 +96,40 @@ select.addEventListener('change', () => {
     }
 
     if (action === 'read') {
-        const filterInput = createElement('textarea', { placeholder: 'Enter filter as JSON' });
+        const filterInput = createElement('textarea', { class: "my-3 w-50 mx-auto form-control", placeholder: 'Enter filter as JSON' });
         const readButton = createElement('button', {class: 'btn btn-secondary'}, 'Read Students');
+        const resultDiv = createElement('div', {class: "mt-3 w-75 mx-auto",id: 'data-container'})
 
         actionContainer.appendChild(filterInput);
         actionContainer.appendChild(readButton);
+        actionContainer.appendChild(resultDiv);
 
         readButton.addEventListener('click', async () => {
             try {
-                const filter = JSON.parse(filterInput.value || '{}');
-                const response = await fetch(`/students?${new URLSearchParams(filter)}`);
+                let response = ''
+                if(filterInput.value === '') {
+                    response = await fetch(`/students`, {method: 'GET'});
+                } else {
+                    response = await fetch(`/students`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json', // Specify the content type
+                        },
+                        body: JSON.stringify({ filter: filterInput.value })
+                    });
+                }
+
                 const students = await response.json();
-                console.log(students);
+                renderTable(students);
             } catch (err) {
+                console.log(err)
                 alert('Invalid filter or request failed.');
             }
         });
     }
 
     if (action === 'update') {
-        const filterInput = createElement('textarea', { placeholder: 'Enter filter as JSON' });
+        const filterInput = createElement('textarea', { class: "my-3 w-50 mx-auto form-control", placeholder: 'Enter filter as JSON' });
         const updateButton = createElement('button', {class: 'btn btn-secondary'}, 'Find Students');
         const updateTable = createElement('div', {});
 
@@ -168,7 +182,7 @@ select.addEventListener('change', () => {
 
 
 function renderTable(data) {
-    const container = document.getElementById('console');
+    const container = document.getElementById('data-container');
     container.innerHTML = ''; // Clear previous content
 
     if (data.length === 0) {
