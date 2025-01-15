@@ -6,7 +6,7 @@
 
 ###
 
-<h3 align="left">Before checking lab work, please, <br><br>Check connection with local MongoDB, <br><br>Check if IP address with database is correct<br><br>Check the name of table.<br><br>Write filters like this: {"age": 20}<br><br>Import JSON data</h3>
+<h3 align="left">Before checking lab work, please, <br><br>Check connection with local MongoDB, <br><br>Check if IP address with database is correct<br><br>Check the name of table.<br><br>Write filters like this: {"age": 20}<br><br>Import JSON data (data.json)</h3>
 
 ###
 
