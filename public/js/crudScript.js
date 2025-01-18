@@ -56,7 +56,7 @@ select.addEventListener('change', () => {
         const buttonContainer = createElement('div', { class: 'd-flex justify-content-between mt-3' })
         const addRowButton = createElement('button', {class: 'btn btn-secondary'}, 'Add Row');
         const createButton = createElement('button', {class: 'btn btn-outline-success'}, 'Create Students');
-        const resultDiv = createElement('div', {class: "mt-3 w-75 mx-auto",id: 'data-container'});
+        const resultDiv = createElement('div', {class: "mt-3 w-75 mx-auto h-auto",id: 'data-container'});
 
 
         actionContainer.appendChild(table);
@@ -73,39 +73,39 @@ select.addEventListener('change', () => {
 
         createButton.addEventListener('click', async () => {
             const rows = Array.from(table.querySelectorAll('tbody tr'));
-            const students = rows
-                .filter(async row => {
-                    const inputs = row.querySelectorAll('input');
-                    if (!(await isIdExists(parseInt(inputs[0].value)))) {
-                        alert(`ID ${parseInt(inputs[0].value)} was reserved by another student!`);
-                        return false; // Exclude this row
-                    }
-                    return true; // Keep this row
-                })
-                .map(row => {
+            const students = rows.map(row => {
                     const inputs = row.querySelectorAll('input');
                     return {
-                        student_id: parseInt(inputs[0].value),
-                        name: inputs[1].value,
-                        age: parseInt(inputs[2].value),
-                        major: inputs[3].value,
-                        enrolled: inputs[4].checked
+                        id: parseInt(inputs[0].value) || null,
+                        name: inputs[1].value || '',
+                        age: parseInt(inputs[2].value) || null,
+                        major: inputs[3].value || '',
+                        enrolled: inputs[4].checked || false,
                     };
                 });
 
-            const response = await fetch('/students-create', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(students),
-            });
+            try {
+                const response = await fetch('/students-create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(students),
+                });
 
-            if (response.ok) {
-                const resp = await fetch(`/students`, {method: 'GET'});
-                const students = await resp.json();
-                renderTable(students);
-                alert('Students created successfully!');
-            } else {
-                alert('Failed to create students.');
+                if (response.ok) {
+                    const resp = await fetch(`/students`, { method: 'GET' });
+                    if (resp.ok) {
+                        const updatedStudents = await resp.json();
+                        renderTable(updatedStudents);
+                        alert('Students created successfully!');
+                    } else {
+                        alert('Failed to fetch updated students.');
+                    }
+                } else {
+                    alert('Failed to create students.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
             }
         });
     }
@@ -113,7 +113,7 @@ select.addEventListener('change', () => {
     if (action === 'read') {
         const filterInput = createElement('input', { class: "my-3 w-50 mx-auto form-control", placeholder: 'Enter filter as JSON' });
         const readButton = createElement('button', {class: 'btn btn-secondary'}, 'Read Students');
-        const resultDiv = createElement('div', {class: "mt-3 w-75 mx-auto",id: 'data-container'});
+        const resultDiv = createElement('div', {class: "mt-3 w-75 mx-auto h-auto",id: 'data-container'});
 
         actionContainer.appendChild(filterInput);
         actionContainer.appendChild(readButton);
@@ -121,18 +121,14 @@ select.addEventListener('change', () => {
 
         readButton.addEventListener('click', async () => {
             try {
-                let response = ''
-                if(filterInput.value === '') {
-                    response = await fetch(`/students`, {method: 'GET'});
-                } else {
-                    response = await fetch(`/students`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json', // Specify the content type
-                        },
-                        body: JSON.stringify({ filter: filterInput.value })
-                    });
-                }
+                const filter = filterInput.value || '{}';
+                const response = await fetch(`/students`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ filter: filter })
+                });
 
                 const students = await response.json();
                 renderTable(students);
@@ -144,6 +140,7 @@ select.addEventListener('change', () => {
     }
 
     if (action === 'update') {
+        const resultDiv = createElement('div', {class: "mt-3 w-75 mx-auto h-auto", id: 'data-container'});
         const filterInput = createElement('textarea', { class: "my-3 w-50 mx-auto form-control", placeholder: 'Enter filter as JSON' });
         const updateButton = createElement('button', {class: 'btn btn-secondary'}, 'Find Students');
         const updateTable = createElement('div', {});
@@ -151,22 +148,24 @@ select.addEventListener('change', () => {
         actionContainer.appendChild(filterInput);
         actionContainer.appendChild(updateButton);
         actionContainer.appendChild(updateTable);
+        actionContainer.appendChild(resultDiv)
 
         updateButton.addEventListener('click', async () => {
             try {
                 const filter = filterInput.value || '{}';
                 const response = await fetch(`/students`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json', // Specify the content type
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ filter: filter })
                 });
                 const students = await response.json();
 
                 updateTable.innerHTML = '';
-                students.forEach(student => {
-                    console.log(student.enrolled)
+                if(students.length === 0){
+                    updateTable.innerHTML = '<h3 class="mt-4">There is no student data by your filter!</h3>'
+                }
+                else {
+                    students.forEach(student => {
                     const checkbox = createElement('input', {
                         type: 'checkbox',
                         class: 'my-3 me-3 p-2 rounded-1',
@@ -186,17 +185,18 @@ select.addEventListener('change', () => {
 
                         delete student._id;
 
-                        const updateResponse = await fetch(`/students/${student.student_id}`, {
+                        const updateResponse = await fetch(`/students/${student.id}`, {
                             method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(student)
                         });
 
                         if (updateResponse.ok) {
                             const updatedStudent = await updateResponse.json();
                             alert(`Student ${updatedStudent.name} updated successfully!`);
+                            const resp = await fetch('/students', {method: 'GET'});
+                            const updatedStudents = await resp.json();
+                            renderTable(updatedStudents)
                         } else {
                             alert('Failed to update student.');
                         }
@@ -213,6 +213,7 @@ select.addEventListener('change', () => {
 
                     updateTable.appendChild(row);
                 });
+                }
             } catch (err) {
                 alert('Failed to find students.');
             }
@@ -221,16 +222,20 @@ select.addEventListener('change', () => {
     }
 
     if (action === 'delete') {
+        const resultDiv = createElement('div', {class: "mt-3 w-75 mx-auto h-auto", id: 'data-container'});
         const idInput = createElement('input', { class: 'form-control w-50 me-3', type: 'number', placeholder: 'Enter ID to delete' });
         const deleteButton = createElement('button', {class: 'btn btn-outline-danger'}, 'Delete Student');
         const divContainer = createElement('div', {class: 'd-flex justify-content-center mt-4'})
 
+        actionContainer.appendChild(resultDiv);
         divContainer.appendChild(idInput);
         divContainer.appendChild(deleteButton);
         actionContainer.appendChild(divContainer)
 
+        getList();
+
         deleteButton.addEventListener('click', async () => {
-            const id = parseInt(idInput.value, 10); // Parse ID as an integer
+            const id = parseInt(idInput.value, 10);
             if (isNaN(id) || id < 0) {
                 alert('Please enter a valid student ID.');
                 return;
@@ -239,6 +244,7 @@ select.addEventListener('change', () => {
             try {
                 const response = await fetch(`/students/${id}`, { method: 'DELETE' });
                 if (response.ok) {
+                    await getList();
                     alert('Student deleted successfully!');
                 } else if (response.status === 404) {
                     alert('Student not found.');
@@ -250,6 +256,12 @@ select.addEventListener('change', () => {
                 alert('An error occurred while deleting the student.');
             }
         });
+
+        async function getList(){
+            const resp = await fetch('/students', {method: 'GET'})
+            const list = await resp.json();
+            renderTable(list)
+        }
     }
 });
 
@@ -262,7 +274,6 @@ function renderTable(data) {
         container.textContent = 'No data available.';
         return;
     }
-
 
     const table = document.createElement('table');
     const thead = document.createElement('thead');
@@ -298,14 +309,14 @@ async function isIdExists(id){
     try {
         const response = await fetch(`/isIdExists?id=${id}`);
         if (response.ok) {
-            const result = await response.json(); // Use await here
-            return result.result; // Return the actual result
+            const result = await response.json();
+            return result.result;
         } else {
             console.error(`Failed to check ID existence: ${response.status}`);
-            return false; // Fallback to false on error
+            return false;
         }
     } catch (error) {
         console.error('Error in isIdExists:', error);
-        return false; // Fallback to false on error
+        return false;
     }
 }

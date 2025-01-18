@@ -35,11 +35,31 @@ app.get('/isIdExists', async (req, res) => {
 // CRUD Endpoints
 app.post('/students-create', async (req, res) => {
     try {
+        if (!Array.isArray(req.body) || req.body.length === 0) {
+            return res.status(400).send({ error: 'Invalid or empty student data.' });
+        }
 
-        const students = await collection.insertMany(req.body);
-        res.status(201).send(students);
+        req.body.forEach(student => {
+            if (
+                typeof student.id !== 'number' ||
+                typeof student.name !== 'string' ||
+                typeof student.age !== 'number' ||
+                typeof student.major !== 'string' ||
+                typeof student.enrolled !== 'boolean'
+            ) {
+                throw new Error('Invalid student data format.');
+            }
+        });
+
+        const result = await collection.insertMany(req.body);
+        if (!result || result.insertedCount !== req.body.length) {
+            return res.status(500).send({ error: 'Failed to insert all students.' });
+        }
+
+        res.status(201).send(result);
     } catch (err) {
-        res.status(400).send(err);
+        console.error('Error creating students:', err);
+        res.status(500).send({ error: 'An unexpected error occurred.' });
     }
 });
 
@@ -65,7 +85,7 @@ app.post('/students', async (req, res) => {
 app.put('/students/:id', async (req, res) => {
     try {
         const updatedStudent = await collection.findOneAndUpdate(
-            { student_id: parseInt(req.params.id, 10) },
+            { id: parseInt(req.params.id, 10) },
             { $set: req.body },
             { returnDocument: 'after' }
         );
@@ -78,14 +98,18 @@ app.put('/students/:id', async (req, res) => {
 
 app.delete('/students/:id', async (req, res) => {
     try {
+        const initialCount = await collection.countDocuments();
+
         const deletedStudent = await collection.findOneAndDelete({
-            student_id: parseInt(req.params.id, 10)
+            id: parseInt(req.params.id, 10)
         });
-        console.log(deletedStudent);
-        if (deletedStudent === null) {
-            return res.status(404).send('Student not found');
+
+        const finalCount = await collection.countDocuments();
+
+        if (finalCount === initialCount) {
+            return res.status(404).send('Student not deleted!');
         }
-        res.status(200).send(deletedStudent.value);
+        res.status(200).send(deletedStudent.value || { message: 'Student deleted successfully.' });
     } catch (err) {
         res.status(500).send(err);
     }
